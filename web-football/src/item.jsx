@@ -12,7 +12,7 @@ const TEST_TEAM = {
 export default function Item( {pos, data} ) {
     return (
         <>
-        <h1> hi</h1>
+        <h1> {data.team.displayName} </h1>
         </>
     )
 }
