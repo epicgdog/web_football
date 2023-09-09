@@ -1,9 +1,5 @@
 import { useState, useEffect, Suspense } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
-import Player from "./player.jsx"
-
 const PREM = "GB1"
 
 let tempArr = []
@@ -96,7 +92,7 @@ function App() {
 
   return (
     <>
-    <h1> Web Football </h1>
+    <h1 className="title"> Web Football </h1>
     <div>
       <div>
         {
