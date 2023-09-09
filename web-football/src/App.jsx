@@ -107,6 +107,7 @@ function App() {
 
     } else if (selectedTeam.length > 0){
       setPlrsLoading(true)
+      setSortType("lowest")
       fetch(`https://cors-anywhere.herokuapp.com/https://transfermarkt-api.vercel.app/clubs/${teams[selectedTeam]}/players`).then(res => res.json()).then( (club) => {
         const players = club.players
         let arr = []
