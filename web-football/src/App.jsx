@@ -2,7 +2,6 @@ import { useState, useEffect, Suspense } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
-import Item from "./item.jsx"
 import Player from "./player.jsx"
 
 const PREM = "GB1"
@@ -13,67 +12,102 @@ for (let i = 0; i <= 19; i++){
 }
 const TEST_ARR = tempArr
 
+// turn to false if u have wifi to wokr with
+const OFFLINE = false
+
+const OFFLINE_TEAMS = {
+  "Manchester City": "1",
+  "Manchester United" : "2", 
+  "Liverpool" : "3", 
+  "Chelsea" : "4", 
+  "Arsenal" : "5", 
+  "Tottenham Hotspur" : "6"
+}
+
+let offlinePlayers  = {}
+function generateName(numOfChars) {
+  let str = ""
+  for (let i = 0; i < numOfChars; i++){
+    const num = Math.floor( Math.random() * 26 + 1 )
+    str = str + String.fromCharCode(97 + num)
+  }
+  return str
+}
+
+if (OFFLINE){
+  for (let index in OFFLINE_TEAMS){
+    let players = []
+    for (let i = 0; i < 10; i++ ){
+      players[i] = { name : generateName(5) + " " +  generateName(9),  marketValue : Math.floor(Math.random() * 10 + 1) * 1000000 }
+    }
+    offlinePlayers[OFFLINE_TEAMS[index]] = players
+  }
+}
 
 // STEP 1: fetch all the players in the prem
 // STEP 2: 
 
 function App() {
 
-  const [topPlayers, setTopPlayers] = useState([])
-  const [teams, setTeams] = useState([])
+  const [players, setPlayers] = useState([])
+  const [teams, setTeams] = useState({})
+  const [selectedTeam, setSelectedTeam] = useState("")
+  const [plrsLoading, setPlrsLoading] = useState(false)
 
   useEffect(() => {
     // fetching all the data somehow 
+    if (OFFLINE) { setTeams(OFFLINE_TEAMS); return; }
     fetch("https://cors-anywhere.herokuapp.com/https://transfermarkt-api.vercel.app/competitions/GB1/clubs").then(res => res.json()).then( (clubdata) => {
       // get all the club id's adn stuff to get the players
-      console.log(clubdata)
-      for (const i in clubdata.clubs){
-        setTeams( prev => [...prev, clubdata.clubs[i].name] )
-      }
-
-      // save all clubs names in a variable
-
-      // getting top 3 most valuable players in prem
-      for (let i = 0; i < 3; i++){
-        fetch( `https://cors-anywhere.herokuapp.com/https://transfermarkt-api.vercel.app/clubs/${clubdata.clubs[i].id}/players` ).then(res => res.json()).then( (playerdata) => {
-          let topPlayer = ""
-          let topMarketValue = 0
-          for (const j in playerdata.players){
-            const chosenPlayer = playerdata.players[j]
-            const marketValue = chosenPlayer.marketValue.replace("€", "").replace("m", "0000").replace(".", "").replace("k", "000")
-            console.log(marketValue)
-            if ( parseFloat(marketValue) > topMarketValue || topPlayer == ""){
-              topMarketValue = parseFloat(marketValue)
-              topPlayer = chosenPlayer.name
-            }
-          } 
-          setTopPlayers( prev => [...prev, { name: topPlayer, value : topMarketValue }])
-        } )
-      }
-
+      setTeams( (prev) => {
+        let obj = {}
+        for (const i in clubdata.clubs){
+          obj[clubdata.clubs[i].name] = clubdata.clubs[i].id;
+        }
+        console.log(obj)
+        return obj
+      })
     })
   }, [])
+
+  useEffect(() => {
+    if (OFFLINE && selectedTeam.length > 0){
+      const arr = offlinePlayers[OFFLINE_TEAMS[selectedTeam]]
+      for (let i = 0; i < arr.length; i++){
+        
+      }
+      setPlayers( offlinePlayers[OFFLINE_TEAMS[selectedTeam]] )
+
+    } else if (selectedTeam.length > 0){
+      setPlrsLoading(true)
+      fetch(`https://cors-anywhere.herokuapp.com/https://transfermarkt-api.vercel.app/clubs/${teams[selectedTeam]}/players`).then(res => res.json()).then( (club) => {
+        const players = club.players
+        let arr = []
+        for (let i = 0; i < players.length; i++){
+          const name = players[i].name
+          const mValue = players[i].marketValue
+          arr.push({name: name, mValue : mValue})
+        }
+        setPlayers(arr)
+        setPlrsLoading(false)
+      } )
+    }
+  }, [selectedTeam])
 
   return (
     <>
     <h1> Web Football </h1>
     <div>
-      <h3> Filter </h3>
-      <button> Select Teams </button>
-      <ul>
+      <div>
         {
-          teams.map((val) => (<li> {val} </li>) )
+          Object.keys(teams).length > 0 ? Object.keys(teams).map((val) => (<button onClick={ () => setSelectedTeam(val) }> {val} </button>)) : "loading"
         }
-
-
-      </ul>
-    </div>
-
-    <div>
-      <h2> Top 3 Most Valuable Players </h2>
-      {
-        topPlayers.length > 0 ? topPlayers.map((val, i) => ( <Player data={val}/>)) : "loading"
-      }
+      </div>
+      <div>
+        {
+          plrsLoading ? "loading" : players.map((val) => ( <p>{val.name} | {val.mValue}</p>  ))
+        }
+      </div>
     </div>
     </>
   )
