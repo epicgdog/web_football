@@ -1,5 +1,6 @@
 import { useState, useEffect, Suspense } from 'react'
 import './App.css'
+import Dropdown from "./dropdown.jsx"
 const PREM = "GB1"
 
 let tempArr = []
@@ -40,8 +41,37 @@ if (OFFLINE){
   }
 }
 
-// STEP 1: fetch all the players in the prem
-// STEP 2: 
+function convertFromMarketVal(mValue){
+  let multiplier = 1000
+  if (mValue.match("m")){
+    multiplier = 1_000_000
+  }
+  return parseFloat(mValue.replace("€", "")) * multiplier
+}
+
+function quickSort(arr){
+  // choosing pivot
+  if (arr.length <= 1 ){ return arr; }
+  const pivot = convertFromMarketVal(arr[0].mValue)
+  // divide and conquer
+  let left = []
+  let right = []
+  let same = []
+
+  // looping through each item and if it is less than pivot we put in left array else in right array
+  for (let i = 1; i < arr.length; i++){
+    const val = convertFromMarketVal(arr[i].mValue)
+    if (val > pivot){
+      right.push(arr[i])
+    } else if( val < pivot){
+      left.push(arr[i])
+    } else if (val == pivot){
+      same.push(arr[i])
+    }
+  }
+
+  return [...quickSort(left), arr[0], ...same, ...quickSort(right)]
+}
 
 function App() {
 
@@ -49,6 +79,7 @@ function App() {
   const [teams, setTeams] = useState({})
   const [selectedTeam, setSelectedTeam] = useState("")
   const [plrsLoading, setPlrsLoading] = useState(false)
+  const [sortType, setSortType] = useState("lowest")
 
   useEffect(() => {
     // fetching all the data somehow 
@@ -84,7 +115,7 @@ function App() {
           const mValue = players[i].marketValue
           arr.push({name: name, mValue : mValue})
         }
-        setPlayers(arr)
+        setPlayers( quickSort(arr) )
         setPlrsLoading(false)
       } )
     }
@@ -100,6 +131,10 @@ function App() {
         }
       </div>
       <div>
+        <br></br>
+        <Dropdown buttonText="Sort by...">
+          <button onClick={ () => {setPlayers(prev => [...prev].reverse()); setSortType(prev => prev == "highest" ? "lowest" : prev == "lowest" ? "highest" : "highest" )} }> {sortType == "lowest" ? "highest" : "lowest"} market value</button>
+        </Dropdown>
         {
           plrsLoading ? "loading" : players.map((val) => ( <p>{val.name} | {val.mValue}</p>  ))
         }
